@@ -14,6 +14,9 @@ use ratatui::{
     DefaultTerminal, Frame,
 };
 
+mod command;
+use command::systemd_health::systemd_health;
+
 fn main() -> Result<(), io::Error> {
     let mut terminal = ratatui::init();
     terminal.clear()?;
@@ -27,11 +30,14 @@ enum App {
     Closing,
 }
 
-struct RunningApp {}
+#[derive(Default)]
+struct RunningApp {
+    run_count: u32,
+}
 
 impl App {
     fn start(mut terminal: DefaultTerminal) -> io::Result<()> {
-        App::Running(RunningApp {}).run(&mut terminal)
+        App::Running(RunningApp::default()).run(&mut terminal)
     }
 
     // Run the application's main loop until the state change to closing
@@ -51,7 +57,8 @@ impl App {
 }
 
 impl RunningApp {
-    fn handle_event(self) -> io::Result<App> {
+    fn handle_event(mut self) -> io::Result<App> {
+        self.run_count = self.run_count.checked_add(1).unwrap();
         let res = match event::read()? {
             // it's important to check that the event is a key press event as
             // crossterm also emits key release and repeat events on Windows.
@@ -78,7 +85,11 @@ impl RunningApp {
 impl Widget for &RunningApp {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let title = Title::from(" Remote Execution Automation Tool ".blue().bold());
-        let instruction = Title::from(Line::from(vec![" Quit: ".into(), "<Q> ".red().bold()]));
+        let instruction = Title::from(Line::from(vec![
+            "[ Quit: ".into(),
+            "<Q>".red().bold(),
+            " ]".into(),
+        ]));
 
         let block = Block::bordered()
             .title(title.alignment(Alignment::Center).position(Position::Top))
@@ -89,8 +100,15 @@ impl Widget for &RunningApp {
             )
             .border_set(border::ROUNDED);
 
-        Paragraph::new(Text::from("TODO! - Hello from Ratatui!"))
-            .centered()
+        let text = format!(
+            "redrawn counter: {}\nmarisa systemd status: {}\nremote-port-forward systemd status: {}",
+            self.run_count,
+            systemd_health("marisa").to_color(),
+            systemd_health("remote-port-forward").to_color()
+        );
+
+        Paragraph::new(Text::from(text))
+            .left_aligned()
             .block(block)
             .render(area, buf);
     }
