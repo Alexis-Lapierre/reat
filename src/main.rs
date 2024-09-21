@@ -37,20 +37,20 @@ struct RunningApp {
 
 impl App {
     fn start(mut terminal: DefaultTerminal) -> io::Result<()> {
-        App::Running(RunningApp::default()).run(&mut terminal)
+        Self::Running(RunningApp::default()).run(&mut terminal)
     }
 
     // Run the application's main loop until the state change to closing
     fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while let App::Running(app) = self.take() {
+        while let Self::Running(app) = self.take() {
             terminal.draw(|frame| app.draw(frame))?;
             *self = app.handle_event()?;
         }
         Ok(())
     }
 
-    fn take(&mut self) -> App {
-        let mut result = App::Closing;
+    fn take(&mut self) -> Self {
+        let mut result = Self::Closing;
         std::mem::swap(self, &mut result);
         result
     }

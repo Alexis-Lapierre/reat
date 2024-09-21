@@ -1,4 +1,3 @@
-use core::panic;
 use std::process::Command;
 
 use crossterm::style::Stylize;
@@ -18,13 +17,12 @@ pub fn systemd_health(host: &str) -> Systemd {
         .output()
         .expect("Failed to execute command");
 
-    if !command.status.success() {
-        panic!(
-            "Failed to execute command!\nstdout: {} stderr: {}",
-            String::from_utf8(command.stdout).unwrap(),
-            String::from_utf8(command.stderr).unwrap()
-        );
-    }
+    assert!(
+        command.status.success(),
+        "Failed to execute command!\nstdout: {} stderr: {}",
+        String::from_utf8(command.stdout).unwrap(),
+        String::from_utf8(command.stderr).unwrap()
+    );
 
     if command.stdout == b"" {
         Systemd::Running
@@ -36,8 +34,8 @@ pub fn systemd_health(host: &str) -> Systemd {
 impl Systemd {
     pub fn to_color(self) -> crossterm::style::StyledContent<&'static str> {
         match self {
-            Systemd::Running => "running".green(),
-            Systemd::Degraded => "degraded".red(),
+            Self::Running => "running".green(),
+            Self::Degraded => "degraded".red(),
         }
     }
 }
